@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NEXOR FILE CLOUD</title>
+
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<style>
+*{
+box-sizing:border-box;
+}
+
+body{
+margin:0;
+min-height:100vh;
+font-family:Arial,sans-serif;
+color:white;
+background:
+radial-gradient(circle at 90% 10%,#075b9d55,transparent 30%),
+radial-gradient(circle at 10% 90%,#6932a655,transparent 30%),
+#030711;
+overflow-x:hidden;
+}
+
+body:before{
+content:"";
+position:fixed;
+inset:0;
+background:
+linear-gradient(#ffffff05 1px,transparent 1px),
+linear-gradient(90deg,#ffffff05 1px,transparent 1px);
+background-size:35px 35px;
+pointer-events:none;
+}
+
+.app{
+width:min(700px,92%);
+margin:auto;
+padding:20px 0 50px;
+}
+
+.glass{
+background:#ffffff08;
+border:1px solid #ffffff15;
+backdrop-filter:blur(25px);
+-webkit-backdrop-filter:blur(25px);
+box-shadow:
+0 20px 60px #0008,
+inset 0 1px #ffffff12;
+}
+
+.header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:18px;
+border-radius:25px;
+}
+
+.logo{
+font-size:25px;
+font-weight:900;
+letter-spacing:5px;
+}
+
+.sub{
+font-size:10px;
+color:#55cfff;
+letter-spacing:4px;
+margin-top:5px;
+}
+
+.avatar{
+width:45px;
+height:45px;
+border-radius:15px;
+display:grid;
+place-items:center;
+font-weight:bold;
+background:linear-gradient(135deg,#008cff,#793cff);
+}
+
+.hero{
+margin-top:15px;
+padding:25px;
+border-radius:28px;
+}
+
+.hero h1{
+margin:0;
+font-size:22px;
+}
+
+.hero p{
+color:#8190a5;
+font-size:13px;
+}
+
+.upload{
+margin-top:15px;
+padding:35px 20px;
+border-radius:28px;
+text-align:center;
+}
+
+.cloud{
+font-size:55px;
+filter:drop-shadow(0 0 20px #00aaff);
+}
+
+.upload h2{
+margin:10px 0 5px;
+}
+
+.upload p{
+color:#718096;
+font-size:13px;
+}
+
+button{
+border:0;
+color:white;
+font-family:inherit;
+cursor:pointer;
+}
+
+.uploadBtn{
+margin-top:15px;
+padding:14px 28px;
+border-radius:15px;
+font-weight:bold;
+background:linear-gradient(135deg,#008cff,#713dff);
+box-shadow:0 10px 35px #008cff44;
+}
+
+.cards{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:12px;
+margin-top:15px;
+}
+
+.card{
+padding:20px;
+border-radius:22px;
+}
+
+.card b{
+display:block;
+font-size:22px;
+margin-top:7px;
+}
+
+.card span{
+color:#77869b;
+font-size:12px;
+}
+
+.files{
+margin-top:15px;
+padding:20px;
+border-radius:28px;
+}
+
+.title{
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+.refresh{
+width:38px;
+height:38px;
+border-radius:12px;
+background:#ffffff0c;
+font-size:18px;
+}
+
+.empty{
+padding:30px 5px;
+text-align:center;
+color:#68778b;
+font-size:13px;
+}
+
+@media(max-width:450px){
+.logo{
+font-size:21px;
+}
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<header class="header glass">
+
+<div>
+<div class="logo">NEXOR</div>
+<div class="sub">FILE CLOUD</div>
+</div>
+
+<div class="avatar" id="avatar">N</div>
+
+</header>
+
+<section class="hero glass">
+
+<h1>فضای فایل شما</h1>
+
+<p>
+فایل‌هایت را در یک محیط شیشه‌ای و حرفه‌ای مدیریت کن.
+</p>
+
+</section>
+
+<section class="upload glass">
+
+<div class="cloud">☁️</div>
+
+<h2>آپلود فایل</h2>
+
+<p>
+فایل خودت را انتخاب کن
+</p>
+
+<input
+id="file"
+type="file"
+hidden
+>
+
+<button
+class="uploadBtn"
+onclick="document.getElementById('file').click()"
+>
+📤 انتخاب فایل
+</button>
+
+<p id="status"></p>
+
+</section>
+
+<section class="cards">
+
+<div class="card glass">
+📁
+<b id="count">0</b>
+<span>تعداد فایل</span>
+</div>
+
+<div class="card glass">
+💾
+<b id="size">0 MB</b>
+<span>فضای مصرف‌شده</span>
+</div>
+
+</section>
+
+<section class="files glass">
+
+<div class="title">
+
+<h3>فایل‌های من</h3>
+
+<button
+class="refresh"
+onclick="loadFiles()"
+>
+↻
+</button>
+
+</div>
+
+<div id="list">
+
+<div class="empty">
+هنوز فایلی وجود ندارد.
+</div>
+
+</div>
+
+</section>
+
+</div>
+
+<script>
+
+const tg=window.Telegram.WebApp;
+
+tg.ready();
+tg.expand();
+
+const user=tg.initDataUnsafe?.user;
+
+if(user){
+
+document.getElementById("avatar")
+.textContent=
+(user.first_name||"N")
+.charAt(0)
+.toUpperCase();
+
+}
+
+document
+.getElementById("file")
+.addEventListener("change",function(){
+
+const file=this.files[0];
+
+if(!file)return;
+
+document.getElementById("status")
+.textContent=
+"فایل انتخاب شد: "+file.name;
+
+});
+
+function loadFiles(){
+
+document.getElementById("list").innerHTML=
+`
+<div class="empty">
+سیستم فایل در مرحله بعد متصل می‌شود.
+</div>
+`;
+
+}
+
+loadFiles();
+
+</script>
+
+</body>
+</html>
